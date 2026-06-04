@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>值日安排</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: calc(100vw / 7.5); }
+    :root {
+      --bg-gradient-light: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --bg-gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      --card-bg-light: rgba(255, 255, 255, 0.95);
+      --card-bg-dark: rgba(30, 30, 50, 0.95);
+      --card-border-light: rgba(255, 255, 255, 0.3);
+      --card-border-dark: rgba(255, 255, 255, 0.1);
+      --text-primary-light: #2d3436;
+      --text-primary-dark: #f1f1f1;
+      --text-secondary-light: #636e72;
+      --text-secondary-dark: #a0a0a0;
+      --text-muted-light: #95a5a6;
+      --text-muted-dark: #6b6b6b;
+      --badge-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --date-card-bg-light: linear-gradient(145deg, #f8f9fa, #e9ecef);
+      --date-card-bg-dark: linear-gradient(145deg, #2a2a4a, #1f1f3a);
+      --nav-btn-bg-light: linear-gradient(145deg, #f8f9fa, #e9ecef);
+      --nav-btn-bg-dark: linear-gradient(145deg, #2a2a4a, #1f1f3a);
+      --nav-btn-color-light: #636e72;
+      --nav-btn-color-dark: #a0a0a0;
+      --input-bg-light: #fafafa;
+      --input-bg-dark: #2a2a4a;
+      --input-border-light: #e0e0e0;
+      --input-border-dark: #4a4a6a;
+      --day-cell-hover-light: #f1f2f6;
+      --day-cell-hover-dark: #3a3a5a;
+      --day-cell-color-light: #2d3436;
+      --day-cell-color-dark: #e0e0e0;
+      --selected-gradient: linear-gradient(135deg, #ff9500 0%, #ff6b35 100%);
+      --toast-bg: rgba(0, 0, 0, 0.75);
+    }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+      background: var(--bg-gradient-light); 
+      min-height: 100vh; 
+      padding: 0.4rem 0.32rem; 
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: var(--bg-gradient-dark);
+    }
+    .container { 
+      max-width: 4.8rem; 
+      width: 100%; 
+      margin: 0 auto; 
+    }
+    .card { 
+      background: var(--card-bg-light); 
+      backdrop-filter: blur(10px);
+      border-radius: 0.32rem; 
+      padding: 0.48rem; 
+      margin-bottom: 0.32rem; 
+      box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.15); 
+      border: 1px solid var(--card-border-light);
+      transition: all 0.3s ease;
+    }
+    .dark .card {
+      background: var(--card-bg-dark);
+      border-color: var(--card-border-dark);
+      box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.3);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.32rem 0;
+    }
+    .header h1 { 
+      font-size: 0.56rem; 
+      font-weight: 700;
+      background: var(--badge-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+    .theme-toggle {
+      width: 1.0667rem;
+      height: 1.0667rem;
+      border-radius: 50%;
+      background: var(--date-card-bg-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5333rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0.08rem 0.2rem rgba(0, 0, 0, 0.1);
+    }
+    .dark .theme-toggle {
+      background: var(--date-card-bg-dark);
+    }
+    .theme-toggle:active {
+      transform: scale(0.95);
+    }
+    .date-card { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 0.4rem; 
+      background: var(--date-card-bg-light); 
+      border-radius: 0.24rem; 
+      transition: background 0.3s ease;
+    }
+    .dark .date-card {
+      background: var(--date-card-bg-dark);
+    }
+    .date-main { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 0.06rem; 
+    }
+    .date-text { 
+      font-size: 0.56rem; 
+      font-weight: 700; 
+      color: var(--text-primary-light); 
+      line-height: 1.3; 
+      transition: color 0.3s ease;
+    }
+    .dark .date-text {
+      color: var(--text-primary-dark);
+    }
+    .weekday-text { 
+      font-size: 0.4rem; 
+      color: var(--text-secondary-light); 
+      line-height: 1.2; 
+      transition: color 0.3s ease;
+    }
+    .dark .weekday-text {
+      color: var(--text-secondary-dark);
+    }
+    .semester-info { 
+      font-size: 0.32rem; 
+      color: var(--text-muted-light); 
+      line-height: 1.2; 
+      transition: color 0.3s ease;
+    }
+    .dark .semester-info {
+      color: var(--text-muted-dark);
+    }
+    .week-badge { 
+      background: var(--badge-gradient); 
+      color: #fff; 
+      padding: 0.2rem 0.4rem; 
+      border-radius: 0.48rem; 
+      font-size: 0.36rem; 
+      font-weight: 600; 
+      box-shadow: 0 0.1rem 0.3rem rgba(102, 126, 234, 0.4);
+    }
+    .duty-card { 
+      text-align: center; 
+      padding: 0.56rem 0.4rem;
+    }
+    .duty-label { 
+      font-size: 0.36rem; 
+      color: var(--text-secondary-light); 
+      margin-bottom: 0.24rem; 
+      display: block;
+      transition: color 0.3s ease;
+    }
+    .dark .duty-label {
+      color: var(--text-secondary-dark);
+    }
+    .duty-person { 
+      font-size: 1rem; 
+      font-weight: 800; 
+      background: var(--badge-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.04rem;
+    }
+    .calendar-card {
+      padding: 0.4rem;
+    }
+    .calendar-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 0.32rem; 
+    }
+    .calendar-title { 
+      font-size: 0.44rem; 
+      font-weight: 600; 
+      color: var(--text-primary-light); 
+      transition: color 0.3s ease;
+    }
+    .dark .calendar-title {
+      color: var(--text-primary-dark);
+    }
+    .calendar-nav { 
+      display: flex; 
+      gap: 0.16rem; 
+    }
+    .nav-btn { 
+      width: 0.88rem; 
+      height: 0.88rem; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      background: var(--nav-btn-bg-light); 
+      border-radius: 0.16rem; 
+      font-size: 0.48rem; 
+      color: var(--nav-btn-color-light); 
+      transition: all 0.2s;
+    }
+    .dark .nav-btn {
+      background: var(--nav-btn-bg-dark);
+      color: var(--nav-btn-color-dark);
+    }
+    .nav-btn:active {
+      transform: scale(0.95);
+    }
+    .weekdays { 
+      display: flex; 
+      margin-bottom: 0.24rem; 
+    }
+    .weekday { 
+      flex: 1; 
+      text-align: center; 
+      font-size: 0.32rem; 
+      color: var(--text-muted-light); 
+      font-weight: 500;
+      padding: 0.1rem 0;
+      transition: color 0.3s ease;
+    }
+    .dark .weekday {
+      color: var(--text-muted-dark);
+    }
+    .days { 
+      display: flex; 
+      flex-wrap: wrap; 
+    }
+    .day-cell { 
+      width: calc(100% / 7); 
+      height: 1.12rem; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 0.38rem; 
+      color: var(--day-cell-color-light); 
+      cursor: pointer; 
+      border-radius: 0.16rem;
+      transition: all 0.2s;
+    }
+    .dark .day-cell {
+      color: var(--day-cell-color-dark);
+    }
+    .day-cell:hover {
+      background: var(--day-cell-hover-light);
+    }
+    .dark .day-cell:hover {
+      background: var(--day-cell-hover-dark);
+    }
+    .day-cell:active {
+      transform: scale(0.95);
+    }
+    .day-cell.today { 
+      background: var(--badge-gradient); 
+      color: #fff; 
+      border-radius: 50%; 
+      width: 0.9rem; 
+      height: 0.9rem; 
+      box-shadow: 0 0.12rem 0.3rem rgba(102, 126, 234, 0.5);
+    }
+    .day-cell.selected { 
+      background: var(--selected-gradient); 
+      color: #fff; 
+      border-radius: 50%; 
+      width: 0.9rem; 
+      height: 0.9rem; 
+      box-shadow: 0 0.12rem 0.3rem rgba(255, 149, 0, 0.5);
+    }
+    .day-cell.other-month { 
+      color: transparent; 
+      cursor: default; 
+    }
+    .input-card {
+      padding: 0.4rem;
+    }
+    .input-label { 
+      font-size: 0.36rem; 
+      color: var(--text-secondary-light); 
+      margin-bottom: 0.24rem; 
+      display: block; 
+      transition: color 0.3s ease;
+    }
+    .dark .input-label {
+      color: var(--text-secondary-dark);
+    }
+    .input-row { 
+      display: flex; 
+      gap: 0.24rem; 
+    }
+    .week-input { 
+      flex: 1; 
+      height: 1.12rem; 
+      padding: 0 0.32rem; 
+      border: 2px solid var(--input-border-light); 
+      border-radius: 0.2rem; 
+      font-size: 0.44rem; 
+      background: var(--input-bg-light);
+      color: var(--text-primary-light);
+      transition: all 0.2s;
+    }
+    .dark .week-input {
+      border-color: var(--input-border-dark);
+      background: var(--input-bg-dark);
+      color: var(--text-primary-dark);
+    }
+    .week-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .confirm-btn { 
+      background: var(--badge-gradient); 
+      color: #fff; 
+      padding: 0 0.56rem; 
+      border-radius: 0.2rem; 
+      font-size: 0.4rem; 
+      font-weight: 600;
+      border: none; 
+      cursor: pointer; 
+      transition: all 0.2s;
+      box-shadow: 0 0.12rem 0.3rem rgba(102, 126, 234, 0.4);
+    }
+    .confirm-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 0.08rem 0.2rem rgba(102, 126, 234, 0.3);
+    }
+    .toast { 
+      position: fixed; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%,-50%); 
+      background: var(--toast-bg); 
+      color: #fff; 
+      padding: 0.4rem 0.8rem; 
+      border-radius: 0.2rem; 
+      font-size: 0.4rem; 
+      z-index: 1000; 
+      display: none; 
+      box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.3);
+    }
+    .toast.show { display: block; }
+    .safe-bottom {
+      height: env(safe-area-inset-bottom);
+      min-height: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card header">
+      <h1>值日安排</h1>
+      <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">☀️</div>
+    </div>
+    
+    <div class="card">
+      <div class="date-card">
+        <div class="date-main">
+          <span class="date-text" id="dateText">2026 年 06 月 04 日</span>
+          <span class="weekday-text" id="weekdayText">星期三</span>
+          <span class="semester-info">开学：2026 年 3 月 2 日</span>
+        </div>
+        <div class="week-badge" id="weekBadge">第 14 周</div>
+      </div>
+    </div>
+    
+    <div class="card duty-card">
+      <div class="duty-label">今日值日</div>
+      <div class="duty-person" id="dutyPerson">431-2</div>
+    </div>
+    
+    <div class="card calendar-card">
+      <div class="calendar-header">
+        <span class="calendar-title" id="calendarTitle">2026 年 6 月</span>
+        <div class="calendar-nav">
+          <div class="nav-btn" onclick="prevMonth()">‹</div>
+          <div class="nav-btn" onclick="nextMonth()">›</div>
+        </div>
+      </div>
+      <div class="weekdays">
+        <span class="weekday">日</span>
+        <span class="weekday">一</span>
+        <span class="weekday">二</span>
+        <span class="weekday">三</span>
+        <span class="weekday">四</span>
+        <span class="weekday">五</span>
+        <span class="weekday">六</span>
+      </div>
+      <div class="days" id="daysContainer"></div>
+    </div>
+    
+    <div class="card input-card">
+      <span class="input-label">选择教学周数</span>
+      <div class="input-row">
+        <input type="number" class="week-input" id="weekInput" placeholder="请输入周数" min="1" max="24">
+        <button class="confirm-btn" onclick="setWeek()">确定</button>
+      </div>
+    </div>
+    
+    <div class="safe-bottom"></div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    const SEMESTER_START = new Date('2026-03-02');
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let selectedDate = new Date();
+    let isDarkMode = false;
+    
+    const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    
+    function calculateWeek(date = new Date()) {
+      const start = new Date(SEMESTER_START);
+      const target = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      target.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.max(1, Math.floor(diffDays / 7) + 1);
+    }
+    
+    function getDutyPerson(weekNum) {
+      const remainder = weekNum % 3;
+      if (remainder === 1) return '431-1';
+      if (remainder === 2) return '431-2';
+      return '431-3';
+    }
+    
+    function updateDisplay(weekNum, date = selectedDate) {
+      document.getElementById('dateText').textContent = 
+        `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月${String(date.getDate()).padStart(2, '0')}日`;
+      document.getElementById('weekdayText').textContent = WEEKDAYS[date.getDay()];
+      document.getElementById('weekBadge').textContent = `第 ${weekNum} 周`;
+      document.getElementById('dutyPerson').textContent = getDutyPerson(weekNum);
+      document.getElementById('weekInput').value = weekNum;
+    }
+    
+    function setWeek() {
+      const week = parseInt(document.getElementById('weekInput').value);
+      if (week && week > 0 && week <= 24) {
+        updateDisplay(week);
+        showToast(`第${week}周 ${getDutyPerson(week)}值日`);
+      } else {
+        showToast('请输入 1-24 之间的周数');
+      }
+    }
+    
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+    
+    function generateCalendar(year, month) {
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      const daysContainer = document.getElementById('daysContainer');
+      
+      let html = '';
+      
+      for (let i = 0; i < firstDay; i++) {
+        html += '<div class="day-cell other-month"></div>';
+      }
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+        const isSelected = selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === day;
+        
+        let className = 'day-cell';
+        if (isToday && !isSelected) className += ' today';
+        if (isSelected) className += ' selected';
+        
+        html += `<div class="${className}" onclick="selectDate(${day})">${day}</div>`;
+      }
+      
+      daysContainer.innerHTML = html;
+      document.getElementById('calendarTitle').textContent = `${year}年${month + 1}月`;
+    }
+    
+    function selectDate(day) {
+      selectedDate = new Date(currentYear, currentMonth, day);
+      const week = calculateWeek(selectedDate);
+      updateDisplay(week, selectedDate);
+      showToast(`第${week}周 ${getDutyPerson(week)}值日`);
+      generateCalendar(currentYear, currentMonth);
+    }
+    
+    function prevMonth() {
+      if (currentMonth === 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else {
+        currentMonth--;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+    
+    function nextMonth() {
+      if (currentMonth === 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else {
+        currentMonth++;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+    
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      const body = document.body;
+      const toggleBtn = document.getElementById('theme-toggle');
+      
+      if (isDarkMode) {
+        body.classList.add('dark');
+        toggleBtn.textContent = '🌙';
+        showToast('已切换深色模式');
+      } else {
+        body.classList.remove('dark');
+        toggleBtn.textContent = '☀️';
+        showToast('已切换浅色模式');
+      }
+    }
+    
+    document.getElementById('weekInput').addEventListener('keyup', e => {
+      if (e.key === 'Enter') setWeek();
+    });
+    
+    (function init() {
+      selectedDate = new Date();
+      const week = calculateWeek(selectedDate);
+      updateDisplay(week, selectedDate);
+      generateCalendar(selectedDate.getFullYear(), selectedDate.getMonth());
+    })();
+  </script>
+</body>
+</html>
